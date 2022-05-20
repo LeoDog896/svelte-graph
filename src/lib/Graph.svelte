@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { between, location } from "$lib/math";
-  export interface Position {
-    x: number;
-    y: number;
-  }
+  import { between, location } from "$lib/math"
+  import { type Position, add, mul, single } from "$lib/position"
 
   export let width = 600;
   export let height = 600;
+  export let dragStrength = 0.04
+  export let draggable = true;
 
   export let classes: string = "";
  
   export let min: Position = { x: -10, y: -10 };
   export let max: Position = { x: 10, y: 10 };
 
+  let dragging = false;
   let canvas: HTMLCanvasElement;
 
   const drawLine = (from: Position, to: Position, context: CanvasRenderingContext2D) => {
@@ -26,6 +26,8 @@
   const draw = () => {
     const context = canvas.getContext("2d")
     if (!context) return
+
+    context.clearRect(0, 0, width, height)
 
     context.strokeStyle = "black";
 
@@ -46,9 +48,27 @@
     }
   };
 
+  function mousemove(event: MouseEvent) {
+    if (!draggable || !dragging) return;
+
+    const delta = { x: event.movementX, y: event.movementY };
+
+    const deltaStrength = mul(delta, single(-dragStrength))
+
+    min = add(min, deltaStrength)
+    max = add(max, deltaStrength)
+
+    draw()
+  }
+
   onMount(() => {
     draw()
   })
 </script>
 
-<canvas class="{classes}" bind:this={canvas} {width} {height}></canvas>
+<canvas 
+  on:mousedown={() => { dragging = true }}
+  on:mouseup={() => { dragging = false }}
+  on:mousemove={mousemove}
+  class="{classes}" bind:this={canvas} {width} {height}
+></canvas>
